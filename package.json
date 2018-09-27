@@ -1,0 +1,32 @@
+{
+  "name": "blazor-webidl-gen",
+  "version": "1.0.0",
+  "description": "WebIDL preprocessor for Blazor",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsc --p ./tsconfig.json && node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kant2002/blazor-webidl-gen.git"
+  },
+  "keywords": [
+    "blazor",
+    "webidl"
+  ],
+  "author": "Andrii Kurdiumov <kant2002@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kant2002/blazor-webidl-gen/issues"
+  },
+  "homepage": "https://github.com/kant2002/blazor-webidl-gen#readme",
+  "dependencies": {
+    "webidl2": "^14.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^10.11.1",
+    "@types/webidl2": "^10.2.2",
+    "typescript": "^3.1.1"
+  }
+}
