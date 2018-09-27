@@ -13,7 +13,7 @@ if (path.extname(fileName) != ".widl") {
     process.exit(1);
 }
 
-
+const outputFileName = process.argv[3];
 const content = fs.readFileSync(fileName);
 const parsingStructure = webidl2.parse(content.toString());
-console.log(JSON.stringify(parsingStructure, null, 2));
+fs.writeFileSync(outputFileName, JSON.stringify(parsingStructure, null, 2));
