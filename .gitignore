@@ -1,3 +1,8 @@
 node_modules/
 *.js
 json/
+.vs/
+bin/
+obj/
+launchSettings.json
+*.user
