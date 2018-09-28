@@ -42,5 +42,15 @@ namespace BlazorInteropGenerator
 
             return typeReference.TypeName;
         }
+
+        public static bool IsAsync(WebIdlTypeReference type)
+        {
+            if (type.Generic?.Value == "Promise")
+            {
+                return true;
+            }
+
+            return false;
+        }
     }
 }

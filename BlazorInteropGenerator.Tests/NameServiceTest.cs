@@ -23,18 +23,7 @@ namespace BlazorInteropGenerator.Tests
         [TestMethod]
         public void RegularTypes()
         {
-            var type = JToken.Parse(@"{
-                ""type"": ""return-type"",
-                ""generic"": null,
-                ""nullable"": null,
-                ""union"": false,
-                ""idlType"": ""void"",
-                ""baseName"": ""void"",
-                ""prefix"": null,
-                ""postfix"": null,
-                ""separator"": null,
-                ""extAttrs"": null
-            }").ToObject<WebIdlTypeReference>();
+            var type = CreateTypeDefinition("void");
             var name = NameService.GetTypeName(type);
             Assert.AreEqual("void", name);
         }
@@ -42,43 +31,7 @@ namespace BlazorInteropGenerator.Tests
         [TestMethod]
         public void PromiseVoid()
         {
-            var type = JToken.Parse(@"{
-            ""type"": ""return-type"",
-            ""generic"": {
-              ""value"": ""Promise"",
-              ""trivia"": {
-                ""open"": """",
-                ""close"": """"
-              }
-            },
-            ""nullable"": null,
-            ""union"": false,
-            ""idlType"": [
-              {
-                ""type"": ""return-type"",
-                ""generic"": null,
-                ""nullable"": null,
-                ""union"": false,
-                ""idlType"": ""void"",
-                ""baseName"": ""void"",
-                ""prefix"": null,
-                ""postfix"": null,
-                ""separator"": null,
-                ""extAttrs"": null,
-                ""trivia"": {
-                  ""base"": """"
-                }
-              }
-            ],
-            ""baseName"": ""Promise"",
-            ""prefix"": null,
-            ""postfix"": null,
-            ""separator"": null,
-            ""extAttrs"": null,
-            ""trivia"": {
-              ""base"": ""\r\n  ""
-            }
-          }").ToObject<WebIdlTypeReference>();
+            var type = CreateSingleParameterGeneric("Promise", "void");
             var name = NameService.GetTypeName(type);
             Assert.AreEqual("Task", name);
         }
@@ -86,10 +39,57 @@ namespace BlazorInteropGenerator.Tests
         [TestMethod]
         public void PromiseString()
         {
-            var type = JToken.Parse(@"{
+            var type = CreateSingleParameterGeneric("Promise", "string");
+            var name = NameService.GetTypeName(type);
+            Assert.AreEqual("Task<string>", name);
+        }
+
+        [TestMethod]
+        public void PromiseVoidIsAsyncCall()
+        {
+            var type = CreateSingleParameterGeneric("Promise", "void");
+            var isAsync = NameService.IsAsync(type);
+            Assert.IsTrue(isAsync);
+        }
+
+        [TestMethod]
+        public void PromiseStringIsAsyncCall()
+        {
+            var type = CreateSingleParameterGeneric("Promise", "string");
+            var isAsync = NameService.IsAsync(type);
+            Assert.IsTrue(isAsync);
+        }
+
+        [TestMethod]
+        public void GenericIsNotAsyncCall()
+        {
+            var type = CreateSingleParameterGeneric("NonPromise", "string");
+            var isAsync = NameService.IsAsync(type);
+            Assert.IsFalse(isAsync);
+        }
+
+        [TestMethod]
+        public void StringIsNotAsyncCall()
+        {
+            var type = CreateTypeDefinition("string");
+            var isAsync = NameService.IsAsync(type);
+            Assert.IsFalse(isAsync);
+        }
+
+        [TestMethod]
+        public void VoidIsNotAsyncCall()
+        {
+            var type = CreateTypeDefinition("void");
+            var isAsync = NameService.IsAsync(type);
+            Assert.IsFalse(isAsync);
+        }
+
+        private static WebIdlTypeReference CreateSingleParameterGeneric(string genericType, string arg1)
+        {
+            return JToken.Parse(@"{
             ""type"": ""return-type"",
             ""generic"": {
-              ""value"": ""Promise"",
+              ""value"": """ + genericType + @""",
               ""trivia"": {
                 ""open"": """",
                 ""close"": """"
@@ -103,8 +103,8 @@ namespace BlazorInteropGenerator.Tests
                 ""generic"": null,
                 ""nullable"": null,
                 ""union"": false,
-                ""idlType"": ""string"",
-                ""baseName"": ""string"",
+                ""idlType"": """ + arg1 + @""",
+                ""baseName"": """ + arg1 + @""",
                 ""prefix"": null,
                 ""postfix"": null,
                 ""separator"": null,
@@ -114,7 +114,7 @@ namespace BlazorInteropGenerator.Tests
                 }
               }
             ],
-            ""baseName"": ""Promise"",
+            ""baseName"": """ + genericType + @""",
             ""prefix"": null,
             ""postfix"": null,
             ""separator"": null,
@@ -123,8 +123,22 @@ namespace BlazorInteropGenerator.Tests
               ""base"": ""\r\n  ""
             }
           }").ToObject<WebIdlTypeReference>();
-            var name = NameService.GetTypeName(type);
-            Assert.AreEqual("Task<string>", name);
+        }
+
+        private static WebIdlTypeReference CreateTypeDefinition(string typeName)
+        {
+            return JToken.Parse(@"{
+                ""type"": ""return-type"",
+                ""generic"": null,
+                ""nullable"": null,
+                ""union"": false,
+                ""idlType"": """ + typeName + @""",
+                ""baseName"": """ + typeName + @""",
+                ""prefix"": null,
+                ""postfix"": null,
+                ""separator"": null,
+                ""extAttrs"": null
+            }").ToObject<WebIdlTypeReference>();
         }
     }
 }

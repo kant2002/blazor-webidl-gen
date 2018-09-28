@@ -73,9 +73,10 @@ namespace BlazorInteropGenerator
             //    SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("BaseEntity<Order>")),
             //    SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("IHaveIdentity")));
 
+            var proxyClass = $"Blazor{token.Name}Proxy";
             foreach (var enumMemberDefinition in token.Members)
             {
-                var constField = CreateInterfaceMember(enumMemberDefinition);
+                var constField = CreateInterfaceMember(proxyClass, enumMemberDefinition);
 
                 // Add the field, the property and method to the class.
                 classDeclaration = classDeclaration.AddMembers(constField);
@@ -84,19 +85,30 @@ namespace BlazorInteropGenerator
             return classDeclaration;
         }
 
-        private static MemberDeclarationSyntax CreateInterfaceMember(WebIdlMemberDefinition memberDefinition)
+        private static MemberDeclarationSyntax CreateInterfaceMember(string proxyClass, WebIdlMemberDefinition memberDefinition)
         {
             // var name = memberDefinition.Body;
             if (memberDefinition.Type == "operation")
             {
                 var name = memberDefinition.Body.Name.Escaped;
                 var returnTypeReference = memberDefinition.Body.IdlType;
+                var isAsyncCall = NameService.IsAsync(returnTypeReference);
+                if (isAsyncCall)
+                {
+                    name += "Async";
+                }
+
                 var returnType = CreateType(returnTypeReference);
                 var arguments = memberDefinition.Body.Arguments.Select(CreateParameter);
-                return SyntaxFactory.MethodDeclaration(returnType, name)
-                    .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
-                    .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))
-                    .WithParameterList(SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList<ParameterSyntax>(arguments)));
+                var body = isAsyncCall
+                    ? GenerateAsyncProxyCall(proxyClass, memberDefinition)
+                    : GenerateSyncProxyCall(proxyClass, memberDefinition);
+                return SyntaxFactory.MethodDeclaration(returnType, NameService.GetValidIdentifier(name))
+                    .WithModifiers(SyntaxFactory.TokenList(
+                        SyntaxFactory.Token(SyntaxKind.PublicKeyword),
+                        SyntaxFactory.Token(SyntaxKind.StaticKeyword)))
+                    .WithParameterList(SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(arguments)))
+                    .WithBody(body);
             }
 
             if (memberDefinition.Type == "attribute")
@@ -115,6 +127,91 @@ namespace BlazorInteropGenerator
             }
 
             throw new InvalidDataException($"The member type {memberDefinition.Type} is not supported.");
+        }
+
+        private static BlockSyntax GenerateAsyncProxyCall(string proxyClass, WebIdlMemberDefinition memberDefinition)
+        {
+            /*
+            public static async Task<string> MethodNameAsync(string arg1, string arg2)
+            {
+                var asyncJsRunTime = JSRuntime.Current;
+                return await asyncJsRunTime.InvokeAsync<string>("proxyClass.methodName", arg1, arg2);
+            }
+            */
+            var methodName = memberDefinition.Body.Name.Escaped;
+            var asyncInvocation = SyntaxFactory.ParseExpression($@"await asyncJsRunTime.InvokeAsync<string>(""{proxyClass}.{methodName}"", message)");
+            var syntax = SyntaxFactory.ParseStatement("var asyncJsRunTime = JSRuntime.Current;");
+            var proxyFunctionArgument = SyntaxFactory.Argument(
+                SyntaxFactory.LiteralExpression(
+                    SyntaxKind.StringLiteralExpression,
+                    SyntaxFactory.Literal($"{proxyClass}.{methodName}")));
+            var arguments = memberDefinition.Body.Arguments.Select(CreateArgumentCallExpression);
+            var proxyCallArguments = new[] { proxyFunctionArgument }.Union(arguments);
+
+            var typeName = memberDefinition.Body.IdlType.TypeName ?? memberDefinition.Body.IdlType.IdlType[0].TypeName;
+            var resultType = typeName == "void" 
+                ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword))
+                : SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.StringKeyword));
+            var awaitExpress = SyntaxFactory.AwaitExpression(
+                SyntaxFactory.InvocationExpression(
+                    SyntaxFactory.MemberAccessExpression(
+                        kind: SyntaxKind.SimpleMemberAccessExpression,
+                        expression: SyntaxFactory.IdentifierName("asyncJsRunTime"),
+                        name: SyntaxFactory.GenericName(
+                            identifier: SyntaxFactory.Identifier("InvokeAsync"),
+                            typeArgumentList: SyntaxFactory.TypeArgumentList(
+                                SyntaxFactory.SingletonSeparatedList<TypeSyntax>(resultType)))),
+                    argumentList: SyntaxFactory.ArgumentList(
+                        SyntaxFactory.SeparatedList<ArgumentSyntax>(
+                            proxyCallArguments))));
+            return SyntaxFactory.Block(
+                syntax,
+                SyntaxFactory.ReturnStatement(awaitExpress));
+        }
+
+        private static BlockSyntax GenerateSyncProxyCall(string proxyClass, WebIdlMemberDefinition memberDefinition)
+        {
+            /*
+            public static async Task<string> MethodNameAsync(string arg1, string arg2)
+            {
+                var asyncJsRunTime = JSRuntime.Current;
+                return await asyncJsRunTime.InvokeAsync<string>("proxyClass.methodName", arg1, arg2);
+            }
+            */
+            var methodName = memberDefinition.Body.Name.Escaped;
+            var asyncInvocation = SyntaxFactory.ParseExpression($@"await asyncJsRunTime.InvokeAsync<string>(""{proxyClass}.{methodName}"", message)");
+            var syntax = SyntaxFactory.ParseStatement("var syncJsRunTime = (IJSInProcessRuntime)JSRuntime.Current;");
+            var proxyFunctionArgument = SyntaxFactory.Argument(
+                SyntaxFactory.LiteralExpression(
+                    SyntaxKind.StringLiteralExpression,
+                    SyntaxFactory.Literal($"{proxyClass}.{methodName}")));
+            var arguments = memberDefinition.Body.Arguments.Select(CreateArgumentCallExpression);
+            var proxyCallArguments = new[] { proxyFunctionArgument }.Union(arguments);
+
+            var typeName = memberDefinition.Body.IdlType.TypeName ?? memberDefinition.Body.IdlType.IdlType[0].TypeName;
+            var resultType = typeName == "void"
+                ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword))
+                : SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.StringKeyword));
+            var awaitExpress = SyntaxFactory.InvocationExpression(
+                    SyntaxFactory.MemberAccessExpression(
+                        kind: SyntaxKind.SimpleMemberAccessExpression,
+                        expression: SyntaxFactory.IdentifierName("syncJsRunTime"),
+                        name: SyntaxFactory.GenericName(
+                            identifier: SyntaxFactory.Identifier("Invoke"),
+                            typeArgumentList: SyntaxFactory.TypeArgumentList(
+                                SyntaxFactory.SingletonSeparatedList<TypeSyntax>(resultType)))),
+                    argumentList: SyntaxFactory.ArgumentList(
+                        SyntaxFactory.SeparatedList<ArgumentSyntax>(
+                            proxyCallArguments)));
+            return SyntaxFactory.Block(
+                syntax,
+                SyntaxFactory.ReturnStatement(awaitExpress));
+        }
+
+        private static ArgumentSyntax CreateArgumentCallExpression(WebIdlArgumentDefinition argumentDefinition)
+        {
+            return SyntaxFactory.Argument(
+                SyntaxFactory.IdentifierName(argumentDefinition.Name));
         }
 
         private static TypeSyntax CreateType(WebIdlTypeReference returnTypeReference)
