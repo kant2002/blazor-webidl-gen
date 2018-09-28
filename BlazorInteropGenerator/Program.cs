@@ -116,8 +116,7 @@ namespace BlazorInteropGenerator
                 var name = memberDefinition.Name;
                 var constField = SyntaxFactory.FieldDeclaration(
                     SyntaxFactory.VariableDeclaration(
-                        SyntaxFactory.PredefinedType(
-                            SyntaxFactory.Token(SyntaxKind.StringKeyword)))
+                        SyntaxFactory.ParseTypeName(NameService.GetTypeName(memberDefinition.IdlType)))
                     .WithVariables(
                         SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
                             SyntaxFactory.VariableDeclarator(
@@ -151,7 +150,7 @@ namespace BlazorInteropGenerator
             var typeName = memberDefinition.Body.IdlType.TypeName ?? memberDefinition.Body.IdlType.IdlType[0].TypeName;
             var resultType = typeName == "void" 
                 ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword))
-                : SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.StringKeyword));
+                : SyntaxFactory.ParseTypeName(NameService.GetTypeName(memberDefinition.Body.IdlType));
             var awaitExpress = SyntaxFactory.AwaitExpression(
                 SyntaxFactory.InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
@@ -191,7 +190,7 @@ namespace BlazorInteropGenerator
             var typeName = memberDefinition.Body.IdlType.TypeName ?? memberDefinition.Body.IdlType.IdlType[0].TypeName;
             var resultType = typeName == "void"
                 ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword))
-                : SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.StringKeyword));
+                : SyntaxFactory.ParseTypeName(NameService.GetTypeName(memberDefinition.Body.IdlType));
             var awaitExpress = SyntaxFactory.InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
                         kind: SyntaxKind.SimpleMemberAccessExpression,

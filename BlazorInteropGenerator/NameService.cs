@@ -40,6 +40,17 @@ namespace BlazorInteropGenerator
                 return result;
             }
 
+            var wellKnownTypeOverrides = new Dictionary<string, string>
+            {
+                { "boolean", "bool" },
+                { "DOMString", "string" },
+                { "USVString", "string" },
+            };
+            if (wellKnownTypeOverrides.TryGetValue(typeReference.TypeName, out var overrideType))
+            {
+                return overrideType;
+            }
+
             return typeReference.TypeName;
         }
 

@@ -20,12 +20,17 @@ namespace BlazorInteropGenerator.Tests
             Assert.AreEqual("NoAudio", name);
         }
 
-        [TestMethod]
-        public void RegularTypes()
+        [DataTestMethod]
+        [DataRow("void", "void")]
+        [DataRow("string", "string")]
+        [DataRow("boolean", "bool")]
+        [DataRow("DOMString", "string")]
+        [DataRow("USVString", "string")]
+        public void RegularTypes(string idlType, string csharpType)
         {
-            var type = CreateTypeDefinition("void");
+            var type = CreateTypeDefinition(idlType);
             var name = NameService.GetTypeName(type);
-            Assert.AreEqual("void", name);
+            Assert.AreEqual(csharpType, name);
         }
 
         [TestMethod]
