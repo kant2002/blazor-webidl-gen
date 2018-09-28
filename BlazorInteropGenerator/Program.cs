@@ -16,45 +16,10 @@ namespace BlazorInteropGenerator
             var fileName = args[0];
             var content = File.ReadAllText(fileName);
             var items = JsonConvert.DeserializeObject<WebIdlTypeDefinition[]>(content);
-            foreach (var item in items)
-            {
-                CreateClass("CodeGenerationSample", item);
-            }
+            CreateClassDefinitions("CodeGenerationSample", items);
         }
 
-        /// <summary>
-        /// Create a class from scratch.
-        /// </summary>
-        static void CreateClass(string namespaceName, WebIdlTypeDefinition token)
-        {
-            var code = GetTypeDefinitionCode(namespaceName, token);
-
-            // Output new code to the console.
-            Console.WriteLine(code);
-        }
-
-        /// <summary>
-        /// Create a class from scratch.
-        /// </summary>
-        /// <param name="namespaceName">Name of namespace</param>
-        /// <param name="token">Web IDL token.</param>
-        static string GetTypeDefinitionCode(string namespaceName, WebIdlTypeDefinition token)
-        {
-            var type = token.Type;
-            if (type == "enum")
-            {
-                return GenerateEnumCode(namespaceName, token);
-            }
-
-            if (type == "interface")
-            {
-                return GenerateInterfaceCode(namespaceName, token);
-            }
-
-            return string.Empty;
-        }
-
-        private static string GenerateInterfaceCode(string namespaceName, WebIdlTypeDefinition token)
+        private static void CreateClassDefinitions(string namespaceName, WebIdlTypeDefinition[] items)
         {
             var namespaceElement = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName(namespaceName)).NormalizeWhitespace()
                 .WithUsings(
@@ -63,9 +28,45 @@ namespace BlazorInteropGenerator
                         SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System")),
                     }));
 
+            foreach (var item in items)
+            {
+                var memberDeclaration = GetTypeDefinitionCode(item);
+                if (memberDeclaration != null)
+                {
+                    // Add the class to the namespace.
+                    namespaceElement = namespaceElement.AddMembers(memberDeclaration);
+                }
+            }
+
+            // Normalize and get code as string.
+            var code = namespaceElement
+                .NormalizeWhitespace()
+                .ToFullString();
+            Console.WriteLine(code);
+        }
+
+        private static MemberDeclarationSyntax GetTypeDefinitionCode(WebIdlTypeDefinition token)
+        {
+            MemberDeclarationSyntax memberDeclaration = null;
+            var type = token.Type;
+            if (type == "enum")
+            {
+                memberDeclaration = GenerateEnumCode(token);
+            }
+
+            if (type == "interface")
+            {
+                memberDeclaration = GenerateInterfaceCode(token);
+            }
+
+            return memberDeclaration;
+        }
+
+        private static ClassDeclarationSyntax GenerateInterfaceCode(WebIdlTypeDefinition token)
+        {
             var classDeclaration = SyntaxFactory.ClassDeclaration(token.Name)
-                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(
-                    SyntaxKind.PublicKeyword)));
+                            .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(
+                                SyntaxKind.PublicKeyword)));
 
             //// Inherit BaseEntity<T> and implement IHaveIdentity: (public class Order : BaseEntity<T>, IHaveIdentity)
             //classDeclaration = classDeclaration.AddBaseListTypes(
@@ -80,14 +81,7 @@ namespace BlazorInteropGenerator
                 classDeclaration = classDeclaration.AddMembers(constField);
             }
 
-            // Add the class to the namespace.
-            namespaceElement = namespaceElement.AddMembers(classDeclaration);
-
-            // Normalize and get code as string.
-            var code = namespaceElement
-                .NormalizeWhitespace()
-                .ToFullString();
-            return code;
+            return classDeclaration;
         }
 
         private static MemberDeclarationSyntax CreateInterfaceMember(WebIdlMemberDefinition memberDefinition)
@@ -138,24 +132,41 @@ namespace BlazorInteropGenerator
 
         private static string GenerateEnumCode(string namespaceName, WebIdlTypeDefinition token)
         {
-            var firstEnumMember = token.Values.FirstOrDefault();
-            if (firstEnumMember.Type == "string")
-            {
+            var namespaceElement = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName(namespaceName)).NormalizeWhitespace()
+                .WithUsings(
+                    SyntaxFactory.List(new UsingDirectiveSyntax[]
+                    {
+                        SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System")),
+                    }));
 
-                return GenerateStringEnum(namespaceName, token);
-            }
+            var memberDeclaration = GenerateEnumCode(token);
 
-            return GenerateSimpleEnum(namespaceName, token);
+            namespaceElement = namespaceElement.AddMembers(memberDeclaration);
+            // Normalize and get code as string.
+            var code = namespaceElement
+                .NormalizeWhitespace()
+                .ToFullString();
+            return code;
         }
 
-        private static string GenerateStringEnum(string namespaceName, WebIdlTypeDefinition token)
+        private static MemberDeclarationSyntax GenerateEnumCode(WebIdlTypeDefinition token)
         {
-            // Create a namespace: (namespace CodeGenerationSample)
-            var namespaceElement = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName(namespaceName)).NormalizeWhitespace();
+            var firstEnumMember = token.Values.FirstOrDefault();
+            MemberDeclarationSyntax memberDeclaration;
+            if (firstEnumMember.Type == "string")
+            {
+                memberDeclaration = GenerateStringEnum(token);
+            }
+            else
+            {
+                memberDeclaration = GenerateSimpleEnum(token);
+            }
 
-            // Add System using statement: (using System)
-            namespaceElement = namespaceElement.AddUsings(SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System")));
+            return memberDeclaration;
+        }
 
+        private static ClassDeclarationSyntax GenerateStringEnum(WebIdlTypeDefinition token)
+        {
             //  Create a class: (class Order)
             var classDeclaration = SyntaxFactory.ClassDeclaration(token.Name)
                 .WithModifiers(SyntaxFactory.TokenList(
@@ -227,24 +238,11 @@ namespace BlazorInteropGenerator
                 classDeclaration = classDeclaration.AddMembers(constField);
             }
 
-            // Add the class to the namespace.
-            namespaceElement = namespaceElement.AddMembers(classDeclaration);
-
-            // Normalize and get code as string.
-            var code = namespaceElement
-                .NormalizeWhitespace()
-                .ToFullString();
-            return code;
+            return classDeclaration;
         }
 
-        private static string GenerateSimpleEnum(string namespaceName, WebIdlTypeDefinition token)
+        private static EnumDeclarationSyntax GenerateSimpleEnum(WebIdlTypeDefinition token)
         {
-            // Create a namespace: (namespace CodeGenerationSample)
-            var namespaceElement = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName(namespaceName)).NormalizeWhitespace();
-
-            // Add System using statement: (using System)
-            namespaceElement = namespaceElement.AddUsings(SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System")));
-
             //  Create a class: (class Order)
             var classDeclaration = SyntaxFactory.EnumDeclaration(token.Name);
 
@@ -265,14 +263,7 @@ namespace BlazorInteropGenerator
                 classDeclaration = classDeclaration.AddMembers(fieldDeclaration);
             }
 
-            // Add the class to the namespace.
-            namespaceElement = namespaceElement.AddMembers(classDeclaration);
-
-            // Normalize and get code as string.
-            var code = namespaceElement
-                .NormalizeWhitespace()
-                .ToFullString();
-            return code;
+            return classDeclaration;
         }
     }
 }
