@@ -17,5 +17,30 @@ namespace BlazorInteropGenerator
         {
             return part.Substring(0, 1).ToUpperInvariant() + part.Substring(1);
         }
+
+        public static string GetTypeName(WebIdlTypeReference typeReference)
+        {
+            if (typeReference.Generic != null)
+            {
+                var genericType = typeReference.Generic.Value;
+                switch (genericType)
+                {
+                    case "Promise":
+                        genericType = "Task";
+                        break;
+                }
+
+                var genericTypeParameter = GetTypeName(typeReference.IdlType[0]);
+                var result = $"{genericType}<{genericTypeParameter}>";
+                if (result == "Task<void>")
+                {
+                    return "Task";
+                }
+
+                return result;
+            }
+
+            return typeReference.TypeName;
+        }
     }
 }
