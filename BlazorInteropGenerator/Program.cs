@@ -1,6 +1,8 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
+using McMaster.Extensions.CommandLineUtils;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -11,12 +13,37 @@ namespace BlazorInteropGenerator
 {
     class Program
     {
-        static void Main(string[] args)
+        /// <summary>
+        /// Gets or sets source file to process.
+        /// </summary>
+        [Option("--source-file|-s")]
+        [Required]
+        [FileExists]
+        public string SourceFile { get; set; }
+
+        /// <summary>
+        /// Gets or sets name of the namespace where extensions would be generated.
+        /// </summary>
+        [Option("--namespace|-n")]
+        public string NamespaceName { get; set; } = "CodeGenerationSample";
+
+        /// <summary>
+        /// Entry point for the application.
+        /// </summary>
+        /// <param name="args">Command line arguments passed to the application.</param>
+        /// <returns>Exit code for the application.</returns>
+        static int Main(string[] args)
         {
             var fileName = args[0];
-            var content = File.ReadAllText(fileName);
+            return CommandLineApplication.Execute<Program>(args);
+        }
+
+        private int OnExecute(IConsole console)
+        {
+            var content = File.ReadAllText(this.SourceFile);
             var items = JsonConvert.DeserializeObject<WebIdlTypeDefinition[]>(content);
-            CreateClassDefinitions("CodeGenerationSample", items);
+            CreateClassDefinitions(this.NamespaceName, items);
+            return 0;
         }
 
         private static void CreateClassDefinitions(string namespaceName, WebIdlTypeDefinition[] items)
@@ -64,25 +91,33 @@ namespace BlazorInteropGenerator
 
         private static ClassDeclarationSyntax GenerateInterfaceCode(WebIdlTypeDefinition token)
         {
-            var classDeclaration = SyntaxFactory.ClassDeclaration(token.Name)
+            var name = token.Name;
+            try
+            {
+                var classDeclaration = SyntaxFactory.ClassDeclaration(name)
                             .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(
                                 SyntaxKind.PublicKeyword)));
 
-            //// Inherit BaseEntity<T> and implement IHaveIdentity: (public class Order : BaseEntity<T>, IHaveIdentity)
-            //classDeclaration = classDeclaration.AddBaseListTypes(
-            //    SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("BaseEntity<Order>")),
-            //    SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("IHaveIdentity")));
+                //// Inherit BaseEntity<T> and implement IHaveIdentity: (public class Order : BaseEntity<T>, IHaveIdentity)
+                //classDeclaration = classDeclaration.AddBaseListTypes(
+                //    SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("BaseEntity<Order>")),
+                //    SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("IHaveIdentity")));
 
-            var proxyClass = $"Blazor{token.Name}Proxy";
-            foreach (var enumMemberDefinition in token.Members)
-            {
-                var constField = CreateInterfaceMember(proxyClass, enumMemberDefinition);
+                var proxyClass = $"Blazor{token.Name}Proxy";
+                foreach (var enumMemberDefinition in token.Members)
+                {
+                    var constField = CreateInterfaceMember(proxyClass, enumMemberDefinition);
 
-                // Add the field, the property and method to the class.
-                classDeclaration = classDeclaration.AddMembers(constField);
+                    // Add the field, the property and method to the class.
+                    classDeclaration = classDeclaration.AddMembers(constField);
+                }
+
+                return classDeclaration;
             }
-
-            return classDeclaration;
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error during generation interface {name}", ex);
+            }
         }
 
         private static MemberDeclarationSyntax CreateInterfaceMember(string proxyClass, WebIdlMemberDefinition memberDefinition)
@@ -90,7 +125,22 @@ namespace BlazorInteropGenerator
             // var name = memberDefinition.Body;
             if (memberDefinition.Type == "operation")
             {
-                var name = memberDefinition.Body.Name.Escaped;
+                return CreateInterfaceOperation(proxyClass, memberDefinition);
+            }
+
+            if (memberDefinition.Type == "attribute")
+            {
+                return CreateInterfaceAttribute(memberDefinition);
+            }
+
+            throw new InvalidDataException($"The member type {memberDefinition.Type} is not supported.");
+        }
+
+        private static MemberDeclarationSyntax CreateInterfaceOperation(string proxyClass, WebIdlMemberDefinition memberDefinition)
+        {
+            var name = memberDefinition.Body.Name.Escaped;
+            try
+            {
                 var returnTypeReference = memberDefinition.Body.IdlType;
                 var isAsyncCall = NameService.IsAsync(returnTypeReference);
                 if (isAsyncCall)
@@ -110,22 +160,31 @@ namespace BlazorInteropGenerator
                     .WithParameterList(SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(arguments)))
                     .WithBody(body);
             }
-
-            if (memberDefinition.Type == "attribute")
+            catch (Exception ex)
             {
-                var name = memberDefinition.Name;
+                throw new InvalidOperationException($"Error during generation operation {name}", ex);
+            }
+        }
+
+        private static MemberDeclarationSyntax CreateInterfaceAttribute(WebIdlMemberDefinition memberDefinition)
+        {
+            var name = memberDefinition.Name;
+            try
+            {
                 var constField = SyntaxFactory.FieldDeclaration(
-                    SyntaxFactory.VariableDeclaration(
-                        SyntaxFactory.ParseTypeName(NameService.GetTypeName(memberDefinition.IdlType)))
-                    .WithVariables(
-                        SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
-                            SyntaxFactory.VariableDeclarator(
-                                SyntaxFactory.Identifier(NameService.GetValidIdentifier(memberDefinition.Name))))))
-                    .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)));
+                SyntaxFactory.VariableDeclaration(
+                    SyntaxFactory.ParseTypeName(NameService.GetTypeName(memberDefinition.IdlType)))
+                .WithVariables(
+                    SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
+                        SyntaxFactory.VariableDeclarator(
+                            SyntaxFactory.Identifier(NameService.GetValidIdentifier(memberDefinition.Name))))))
+                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)));
                 return constField;
             }
-
-            throw new InvalidDataException($"The member type {memberDefinition.Type} is not supported.");
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error during generation atribute {name}", ex);
+            }
         }
 
         private static BlockSyntax GenerateAsyncProxyCall(string proxyClass, WebIdlMemberDefinition memberDefinition)
