@@ -108,6 +108,11 @@ namespace BlazorInteropGenerator
                 memberDeclaration = GenerateInterfaceCode(token);
             }
 
+            if (type == "dictionary")
+            {
+                memberDeclaration = GenerateInterfaceCode(token);
+            }
+
             return memberDeclaration;
         }
 
@@ -154,6 +159,11 @@ namespace BlazorInteropGenerator
             if (memberDefinition.Type == "attribute")
             {
                 return CreateInterfaceAttribute(memberDefinition);
+            }
+
+            if (memberDefinition.Type == "field")
+            {
+                return CreateInterfaceField(memberDefinition);
             }
 
             throw new InvalidDataException($"The member type {memberDefinition.Type} is not supported.");
@@ -213,6 +223,27 @@ namespace BlazorInteropGenerator
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Error during generation atribute {name}", ex);
+            }
+        }
+
+        private static MemberDeclarationSyntax CreateInterfaceField(WebIdlMemberDefinition memberDefinition)
+        {
+            var name = memberDefinition.Name;
+            try
+            {
+                var constField = SyntaxFactory.FieldDeclaration(
+                SyntaxFactory.VariableDeclaration(
+                    SyntaxFactory.ParseTypeName(NameService.GetTypeName(memberDefinition.IdlType)))
+                .WithVariables(
+                    SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
+                        SyntaxFactory.VariableDeclarator(
+                            SyntaxFactory.Identifier(NameService.GetValidIndentifier(memberDefinition.Name))))))
+                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)));
+                return constField;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error during generation field {name}", ex);
             }
         }
 

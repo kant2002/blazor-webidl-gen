@@ -66,6 +66,7 @@ namespace BlazorInteropGenerator
                 { "USVString", "string" },
                 { "unsigned short", "ushort" },
                 { "unsigned long", "ulong" },
+                { "unsigned long long", "ulong" },
                 { "any", "object" },
                 { "DOMTimeStamp", "DateTime" },
                 { "DOMHighResTimeStamp", "double" },

@@ -28,6 +28,7 @@ namespace BlazorInteropGenerator.Tests
         [DataRow("USVString", "string")]
         [DataRow("unsigned short", "ushort")]
         [DataRow("unsigned long", "ulong")]
+        [DataRow("unsigned long long", "ulong")]
         [DataRow("any", "object")]
         [DataRow("DOMTimeStamp", "DateTime")]
         [DataRow("any", "object")]
