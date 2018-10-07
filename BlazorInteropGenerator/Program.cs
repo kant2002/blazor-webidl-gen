@@ -113,7 +113,32 @@ namespace BlazorInteropGenerator
                 memberDeclaration = GenerateInterfaceCode(token);
             }
 
+            if (type == "callback")
+            {
+                memberDeclaration = GenerateDelegate(token);
+            }
+
             return memberDeclaration;
+        }
+
+        private static DelegateDeclarationSyntax GenerateDelegate(WebIdlTypeDefinition memberDefinition)
+        {
+            var name = memberDefinition.Name;
+            try
+            {
+                var returnTypeReference = memberDefinition.IdlType;
+                var returnType = CreateType(returnTypeReference);
+                var arguments = memberDefinition.Arguments.Select(CreateParameter);
+                var methodModifier = SyntaxFactory.TokenList(
+                        SyntaxFactory.Token(SyntaxKind.PublicKeyword));
+                return SyntaxFactory.DelegateDeclaration(returnType, NameService.GetValidIndentifier(name))
+                    .WithModifiers(methodModifier)
+                    .WithParameterList(SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(arguments)));
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Error during generation operation {name}", ex);
+            }
         }
 
         private static ClassDeclarationSyntax GenerateInterfaceCode(WebIdlTypeDefinition token)

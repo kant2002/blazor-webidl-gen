@@ -39,6 +39,14 @@ namespace BlazorInteropGenerator.Tests
             Assert.AreEqual(csharpType, name);
         }
 
+        [TestMethod]
+        public void VibratePatternConverToNumberArray()
+        {
+            var type = CreateTypeDefinition("VibratePattern");
+            var name = NameService.GetTypeName(type);
+            Assert.AreEqual("int[]", name);
+        }
+
         [DataTestMethod]
         [DataRow("Promise", "void", "Task")]
         [DataRow("Promise", "string", "Task<string>")]

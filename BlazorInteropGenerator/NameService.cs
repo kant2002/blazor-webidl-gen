@@ -70,6 +70,9 @@ namespace BlazorInteropGenerator
                 { "any", "object" },
                 { "DOMTimeStamp", "DateTime" },
                 { "DOMHighResTimeStamp", "double" },
+
+                // Temporary workaround until generator would be fully implemented.
+                { "VibratePattern", "int[]" },
             };
             if (wellKnownTypeOverrides.TryGetValue(typeReference.TypeName, out var overrideType))
             {
