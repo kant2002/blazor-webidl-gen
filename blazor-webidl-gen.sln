@@ -3,9 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorInteropGenerator", "BlazorInteropGenerator\BlazorInteropGenerator.csproj", "{7A95D1D3-974B-4547-8405-658EE9F77F29}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorInteropGenerator", "BlazorInteropGenerator\BlazorInteropGenerator.csproj", "{7A95D1D3-974B-4547-8405-658EE9F77F29}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorInteropGenerator.Tests", "BlazorInteropGenerator.Tests\BlazorInteropGenerator.Tests.csproj", "{1B4F5BB9-44E0-4659-80A6-647E1EADCA72}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorInteropGenerator.Tests", "BlazorInteropGenerator.Tests\BlazorInteropGenerator.Tests.csproj", "{1B4F5BB9-44E0-4659-80A6-647E1EADCA72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blazor.WebApiInterop", "Blazor.WebApiInterop\Blazor.WebApiInterop.csproj", "{0E23049C-999A-471C-BA00-CBDA30E24F9D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{5E1616B9-1959-4543-955D-156D08B6C386}"
+	ProjectSection(SolutionItems) = preProject
+		build.cmd = build.cmd
+		generate-csharp.cmd = generate-csharp.cmd
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +49,18 @@ Global
 		{1B4F5BB9-44E0-4659-80A6-647E1EADCA72}.Release|x64.Build.0 = Release|Any CPU
 		{1B4F5BB9-44E0-4659-80A6-647E1EADCA72}.Release|x86.ActiveCfg = Release|Any CPU
 		{1B4F5BB9-44E0-4659-80A6-647E1EADCA72}.Release|x86.Build.0 = Release|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Debug|x64.Build.0 = Debug|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Debug|x86.Build.0 = Debug|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Release|x64.ActiveCfg = Release|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Release|x64.Build.0 = Release|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Release|x86.ActiveCfg = Release|Any CPU
+		{0E23049C-999A-471C-BA00-CBDA30E24F9D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

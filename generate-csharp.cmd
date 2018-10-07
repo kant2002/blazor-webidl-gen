@@ -1,6 +1,6 @@
 @echo off
-if not exist generated mkdir generated
-SET outputpath=generated
+SET outputpath=Blazor.WebApiInterop/Generated
+if not exist %outputpath% mkdir %outputpath%
 cmd /c dotnet build BlazorInteropGenerator/BlazorInteropGenerator.csproj
 cmd /c dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Storage.json" -o %outputpath%/Storage.cs
 cmd /c dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Page Visibility.json" -o %outputpath%/PageVisibility.cs
