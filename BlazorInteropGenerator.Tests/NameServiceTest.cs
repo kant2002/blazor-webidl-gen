@@ -9,14 +9,14 @@ namespace BlazorInteropGenerator.Tests
         [TestMethod]
         public void NamesConvertedToPascalCase()
         {
-            var name = NameService.GetValidIdentifier("default");
+            var name = NameService.ConvertFromWebIdlIdentifier("default");
             Assert.AreEqual("Default", name);
         }
 
         [TestMethod]
         public void DashNamesConvertedToPascalCase()
         {
-            var name = NameService.GetValidIdentifier("no-audio");
+            var name = NameService.ConvertFromWebIdlIdentifier("no-audio");
             Assert.AreEqual("NoAudio", name);
         }
 
@@ -26,6 +26,11 @@ namespace BlazorInteropGenerator.Tests
         [DataRow("boolean", "bool")]
         [DataRow("DOMString", "string")]
         [DataRow("USVString", "string")]
+        [DataRow("unsigned short", "ushort")]
+        [DataRow("unsigned long", "ulong")]
+        [DataRow("any", "object")]
+        [DataRow("DOMTimeStamp", "DateTime")]
+        [DataRow("any", "object")]
         public void RegularTypes(string idlType, string csharpType)
         {
             var type = CreateTypeDefinition(idlType);
@@ -33,20 +38,27 @@ namespace BlazorInteropGenerator.Tests
             Assert.AreEqual(csharpType, name);
         }
 
-        [TestMethod]
-        public void PromiseVoid()
+        [DataTestMethod]
+        [DataRow("Promise", "void", "Task")]
+        [DataRow("Promise", "string", "Task<string>")]
+        [DataRow("sequence", "unsigned long", "IEnumerable<ulong>")]
+        [DataRow("FrozenArray", "unsigned long", "IReadOnlyList<ulong>")]
+        public void GenericTypes(string genericType, string typeParameter1, string expectedType)
         {
-            var type = CreateSingleParameterGeneric("Promise", "void");
+            var type = CreateSingleParameterGeneric(genericType, typeParameter1);
             var name = NameService.GetTypeName(type);
-            Assert.AreEqual("Task", name);
+            Assert.AreEqual(expectedType, name);
         }
 
-        [TestMethod]
-        public void PromiseString()
+        [DataTestMethod]
+        [DataRow("ident", "ident")]
+        [DataRow("string", "@string")]
+        [DataRow("default", "@default")]
+        public void ValidIdentifiersIsGenerated(string name, string expectedIdenfitier)
         {
-            var type = CreateSingleParameterGeneric("Promise", "string");
-            var name = NameService.GetTypeName(type);
-            Assert.AreEqual("Task<string>", name);
+            var idenfitier = NameService.GetValidIndentifier(name);
+            Assert.AreEqual(expectedIdenfitier, idenfitier);
+
         }
 
         [TestMethod]

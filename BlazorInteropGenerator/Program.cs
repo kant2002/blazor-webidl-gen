@@ -28,6 +28,12 @@ namespace BlazorInteropGenerator
         public string NamespaceName { get; set; } = "CodeGenerationSample";
 
         /// <summary>
+        /// Gets or sets destination file where stored generated class.
+        /// </summary>
+        [Option("--output-file|-o")]
+        public string OutputFile { get; set; }
+
+        /// <summary>
         /// Entry point for the application.
         /// </summary>
         /// <param name="args">Command line arguments passed to the application.</param>
@@ -42,17 +48,33 @@ namespace BlazorInteropGenerator
         {
             var content = File.ReadAllText(this.SourceFile);
             var items = JsonConvert.DeserializeObject<WebIdlTypeDefinition[]>(content);
-            CreateClassDefinitions(this.NamespaceName, items);
+            var code = CreateClassDefinitions(this.NamespaceName, items);
+            if (string.IsNullOrEmpty(this.OutputFile))
+            {
+                console.WriteLine(code);
+            }
+            else
+            {
+                using (var writer = new StreamWriter(this.OutputFile))
+                {
+                    writer.Write(code);
+                    writer.Flush();
+                }
+            }
+
             return 0;
         }
 
-        private static void CreateClassDefinitions(string namespaceName, WebIdlTypeDefinition[] items)
+        private static string CreateClassDefinitions(string namespaceName, WebIdlTypeDefinition[] items)
         {
             var namespaceElement = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName(namespaceName)).NormalizeWhitespace()
                 .WithUsings(
                     SyntaxFactory.List(new UsingDirectiveSyntax[]
                     {
                         SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System")),
+                        SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Collections.Generic")),
+                        SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Threading.Tasks")),
+                        SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("Microsoft.JSInterop")),
                     }));
 
             foreach (var item in items)
@@ -69,7 +91,7 @@ namespace BlazorInteropGenerator
             var code = namespaceElement
                 .NormalizeWhitespace()
                 .ToFullString();
-            Console.WriteLine(code);
+            return code;
         }
 
         private static MemberDeclarationSyntax GetTypeDefinitionCode(WebIdlTypeDefinition token)
@@ -95,8 +117,9 @@ namespace BlazorInteropGenerator
             try
             {
                 var classDeclaration = SyntaxFactory.ClassDeclaration(name)
-                            .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(
-                                SyntaxKind.PublicKeyword)));
+                            .WithModifiers(SyntaxFactory.TokenList(
+                                SyntaxFactory.Token(SyntaxKind.PublicKeyword),
+                                SyntaxFactory.Token(SyntaxKind.PartialKeyword)));
 
                 //// Inherit BaseEntity<T> and implement IHaveIdentity: (public class Order : BaseEntity<T>, IHaveIdentity)
                 //classDeclaration = classDeclaration.AddBaseListTypes(
@@ -153,10 +176,16 @@ namespace BlazorInteropGenerator
                 var body = isAsyncCall
                     ? GenerateAsyncProxyCall(proxyClass, memberDefinition)
                     : GenerateSyncProxyCall(proxyClass, memberDefinition);
-                return SyntaxFactory.MethodDeclaration(returnType, NameService.GetValidIdentifier(name))
-                    .WithModifiers(SyntaxFactory.TokenList(
+                var methodModifier = isAsyncCall
+                    ? SyntaxFactory.TokenList(
                         SyntaxFactory.Token(SyntaxKind.PublicKeyword),
-                        SyntaxFactory.Token(SyntaxKind.StaticKeyword)))
+                        SyntaxFactory.Token(SyntaxKind.StaticKeyword),
+                        SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
+                    : SyntaxFactory.TokenList(
+                        SyntaxFactory.Token(SyntaxKind.PublicKeyword),
+                        SyntaxFactory.Token(SyntaxKind.StaticKeyword));
+                return SyntaxFactory.MethodDeclaration(returnType, NameService.GetValidIndentifier(name))
+                    .WithModifiers(methodModifier)
                     .WithParameterList(SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(arguments)))
                     .WithBody(body);
             }
@@ -177,7 +206,7 @@ namespace BlazorInteropGenerator
                 .WithVariables(
                     SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
                         SyntaxFactory.VariableDeclarator(
-                            SyntaxFactory.Identifier(NameService.GetValidIdentifier(memberDefinition.Name))))))
+                            SyntaxFactory.Identifier(NameService.GetValidIndentifier(memberDefinition.Name))))))
                 .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)));
                 return constField;
             }
@@ -207,9 +236,10 @@ namespace BlazorInteropGenerator
             var proxyCallArguments = new[] { proxyFunctionArgument }.Union(arguments);
 
             var typeName = memberDefinition.Body.IdlType.TypeName ?? memberDefinition.Body.IdlType.IdlType[0].TypeName;
-            var resultType = typeName == "void" 
+            var isResultTypeVoid = typeName == "void";
+            var resultType = isResultTypeVoid
                 ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword))
-                : SyntaxFactory.ParseTypeName(NameService.GetTypeName(memberDefinition.Body.IdlType));
+                : SyntaxFactory.ParseTypeName(NameService.GetTypeName(memberDefinition.Body.IdlType.IdlType[0]));
             var awaitExpress = SyntaxFactory.AwaitExpression(
                 SyntaxFactory.InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
@@ -222,9 +252,12 @@ namespace BlazorInteropGenerator
                     argumentList: SyntaxFactory.ArgumentList(
                         SyntaxFactory.SeparatedList<ArgumentSyntax>(
                             proxyCallArguments))));
+            var lastStatement = isResultTypeVoid
+                ? (StatementSyntax)SyntaxFactory.ExpressionStatement(awaitExpress)
+                : SyntaxFactory.ReturnStatement(awaitExpress);
             return SyntaxFactory.Block(
                 syntax,
-                SyntaxFactory.ReturnStatement(awaitExpress));
+                lastStatement);
         }
 
         private static BlockSyntax GenerateSyncProxyCall(string proxyClass, WebIdlMemberDefinition memberDefinition)
@@ -247,10 +280,11 @@ namespace BlazorInteropGenerator
             var proxyCallArguments = new[] { proxyFunctionArgument }.Union(arguments);
 
             var typeName = memberDefinition.Body.IdlType.TypeName ?? memberDefinition.Body.IdlType.IdlType[0].TypeName;
-            var resultType = typeName == "void"
+            var isResultTypeVoid = typeName == "void";
+            var resultType = isResultTypeVoid
                 ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword))
                 : SyntaxFactory.ParseTypeName(NameService.GetTypeName(memberDefinition.Body.IdlType));
-            var awaitExpress = SyntaxFactory.InvocationExpression(
+            var invokeExpression = SyntaxFactory.InvocationExpression(
                     SyntaxFactory.MemberAccessExpression(
                         kind: SyntaxKind.SimpleMemberAccessExpression,
                         expression: SyntaxFactory.IdentifierName("syncJsRunTime"),
@@ -261,15 +295,18 @@ namespace BlazorInteropGenerator
                     argumentList: SyntaxFactory.ArgumentList(
                         SyntaxFactory.SeparatedList<ArgumentSyntax>(
                             proxyCallArguments)));
+            var lastStatement = isResultTypeVoid
+                ? (StatementSyntax)SyntaxFactory.ExpressionStatement(invokeExpression)
+                : SyntaxFactory.ReturnStatement(invokeExpression);
             return SyntaxFactory.Block(
                 syntax,
-                SyntaxFactory.ReturnStatement(awaitExpress));
+                lastStatement);
         }
 
         private static ArgumentSyntax CreateArgumentCallExpression(WebIdlArgumentDefinition argumentDefinition)
         {
             return SyntaxFactory.Argument(
-                SyntaxFactory.IdentifierName(argumentDefinition.Name));
+                SyntaxFactory.IdentifierName(NameService.GetValidIndentifier(argumentDefinition.Name)));
         }
 
         private static TypeSyntax CreateType(WebIdlTypeReference returnTypeReference)
@@ -281,27 +318,9 @@ namespace BlazorInteropGenerator
 
         private static ParameterSyntax CreateParameter(WebIdlArgumentDefinition arg)
         {
-            return SyntaxFactory.Parameter(SyntaxFactory.Identifier(arg.EscapedName))
+            var item = SyntaxFactory.Identifier(NameService.GetValidIndentifier(arg.EscapedName));
+            return SyntaxFactory.Parameter(item)
                 .WithType(CreateType(arg.IdlType));
-        }
-
-        private static string GenerateEnumCode(string namespaceName, WebIdlTypeDefinition token)
-        {
-            var namespaceElement = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName(namespaceName)).NormalizeWhitespace()
-                .WithUsings(
-                    SyntaxFactory.List(new UsingDirectiveSyntax[]
-                    {
-                        SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System")),
-                    }));
-
-            var memberDeclaration = GenerateEnumCode(token);
-
-            namespaceElement = namespaceElement.AddMembers(memberDeclaration);
-            // Normalize and get code as string.
-            var code = namespaceElement
-                .NormalizeWhitespace()
-                .ToFullString();
-            return code;
         }
 
         private static MemberDeclarationSyntax GenerateEnumCode(WebIdlTypeDefinition token)
@@ -325,8 +344,7 @@ namespace BlazorInteropGenerator
             //  Create a class: (class Order)
             var classDeclaration = SyntaxFactory.ClassDeclaration(token.Name)
                 .WithModifiers(SyntaxFactory.TokenList(
-                    SyntaxFactory.Token(SyntaxKind.PublicKeyword),
-                    SyntaxFactory.Token(SyntaxKind.StaticKeyword)));
+                    SyntaxFactory.Token(SyntaxKind.PublicKeyword)));
 
             var enumType = SyntaxFactory.ParseTypeName(token.Name);
             //// Inherit BaseEntity<T> and implement IHaveIdentity: (public class Order : BaseEntity<T>, IHaveIdentity)
@@ -380,7 +398,7 @@ namespace BlazorInteropGenerator
                     .WithVariables(
                         SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
                             SyntaxFactory.VariableDeclarator(
-                                SyntaxFactory.Identifier(NameService.GetValidIdentifier(enumMemberDefinition.Value)))
+                                SyntaxFactory.Identifier(NameService.ConvertFromWebIdlIdentifier(enumMemberDefinition.Value)))
                             .WithInitializer(
                                 SyntaxFactory.EqualsValueClause(
                                     initializationValue)))))

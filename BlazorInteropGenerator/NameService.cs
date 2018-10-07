@@ -7,10 +7,25 @@ namespace BlazorInteropGenerator
 {
     public static class NameService
     {
-        public static string GetValidIdentifier(string webIdlIdentifier)
+        public static string ConvertFromWebIdlIdentifier(string webIdlIdentifier)
         {
             var parts = webIdlIdentifier.Split('-').Select(ToPascalCase);
             return string.Join("", parts);
+        }
+
+        public static string GetValidIndentifier(string identifier)
+        {
+            var reservedWords = new HashSet<string>
+                {
+                    { "string" },
+                    { "default" },
+                };
+            if (reservedWords.Contains(identifier))
+            {
+                return "@" + identifier;
+            }
+
+            return identifier;
         }
 
         private static string ToPascalCase(string part)
@@ -23,11 +38,15 @@ namespace BlazorInteropGenerator
             if (typeReference.Generic != null)
             {
                 var genericType = typeReference.Generic.Value;
-                switch (genericType)
+                var wellKnownGenericTypeOverrides = new Dictionary<string, string>
                 {
-                    case "Promise":
-                        genericType = "Task";
-                        break;
+                    { "Promise", "Task" },
+                    { "sequence", "IEnumerable" },
+                    { "FrozenArray", "IReadOnlyList" },
+                };
+                if (wellKnownGenericTypeOverrides.TryGetValue(genericType, out var overrideTypeName))
+                {
+                    genericType = overrideTypeName;
                 }
 
                 var genericTypeParameter = GetTypeName(typeReference.IdlType[0]);
@@ -45,6 +64,11 @@ namespace BlazorInteropGenerator
                 { "boolean", "bool" },
                 { "DOMString", "string" },
                 { "USVString", "string" },
+                { "unsigned short", "ushort" },
+                { "unsigned long", "ulong" },
+                { "any", "object" },
+                { "DOMTimeStamp", "DateTime" },
+                { "DOMHighResTimeStamp", "double" },
             };
             if (wellKnownTypeOverrides.TryGetValue(typeReference.TypeName, out var overrideType))
             {
