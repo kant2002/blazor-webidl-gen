@@ -1,0 +1,17 @@
+﻿@page "/vibration"
+@using BlazorExtensions
+
+<h1>Vibration</h1>
+
+<p>Last return from vibrate: @lastReturnFromVibrate</p>
+
+<button class="btn btn-primary" onclick="@IncrementCount">Vibrate me</button>
+
+@functions {
+    bool? lastReturnFromVibrate;
+
+    void IncrementCount()
+    {
+        lastReturnFromVibrate = Navigator.vibrate(new[] { 500, 100 });
+    }
+}
