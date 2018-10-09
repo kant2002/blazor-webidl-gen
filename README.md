@@ -1,6 +1,8 @@
 Blazor Interop Code generator
 ===============================
 
+Make sure that close this report recursively.
+
 How to hack
 
     npm install
