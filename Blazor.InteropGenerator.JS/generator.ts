@@ -36,7 +36,17 @@ function createProxyBody(idl: webidl2.OperationMemberType) {
     const mainObject = ts.createPropertyAccess(ts.createIdentifier("navigator"), functionName);
     const proxyCallArguments = body.arguments.map(_ => ts.createIdentifier(_.name));
     const returnValue = ts.createCall(mainObject, /*typeArgs*/ undefined, proxyCallArguments);
-    const statements = [ts.createReturn(returnValue)];
+    const logErrorStatement = ts.createExpressionStatement(
+        ts.createCall(
+            ts.createPropertyAccess(ts.createIdentifier("console"), ts.createIdentifier("error")),
+            /*typeArgs*/ undefined,
+            [ts.createIdentifier("e")])
+    );
+    const compatibilityWrapper = ts.createTry(
+        ts.createBlock([ts.createReturn(returnValue)], true),
+        ts.createCatchClause("e", ts.createBlock([logErrorStatement], true)),
+        undefined);
+    const statements = [compatibilityWrapper];
     const methodBody = ts.createBlock(statements, /*multiline*/ true);
     return methodBody;
 }
