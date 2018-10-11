@@ -4,7 +4,7 @@ import * as path from "path";
 
 const fileName = process.argv[2];
 if (!fileName) {
-    console.error("The file does not specified");
+    console.error("The file is not specified");
     process.exit(1);
 }
 
