@@ -1,6 +1,8 @@
 import webidl2 = require("webidl2");
 import * as fs from "fs";
 import * as path from "path";
+import { generateType } from "./generator";
+import { resolve } from "path";
 
 const fileName = process.argv[2];
 if (!fileName) {
@@ -17,3 +19,15 @@ const outputFileName = process.argv[3];
 const content = fs.readFileSync(fileName);
 const parsingStructure = webidl2.parse(content.toString());
 fs.writeFileSync(outputFileName, JSON.stringify(parsingStructure, null, 2));
+
+const proxyClassFile = process.argv[4];
+for (const rootType of parsingStructure) {
+    if (rootType.type == "interface") {
+        const result = generateType(rootType);
+        if (proxyClassFile) {
+            fs.writeFileSync(proxyClassFile, result);
+        } else {
+            console.log(result);
+        }
+    }
+}

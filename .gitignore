@@ -1,5 +1,5 @@
 node_modules/
-*.js
+Blazor.InteropGenerator.JS/*.js
 json/
 .vs/
 .idea/
