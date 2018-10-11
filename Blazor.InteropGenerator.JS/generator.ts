@@ -2,7 +2,7 @@
 import * as webidl2 from "webidl2";
 import { OperationMemberType } from "webidl2";
 
-const generateJsCode = false;
+const generateJsCode = true;
 
 function createParameters(idl: webidl2.Argument) {
     const paramName = ts.createIdentifier(idl.name);
@@ -12,16 +12,12 @@ function createParameters(idl: webidl2.Argument) {
         /*dotDotDotToken*/ undefined,
         paramName,
         undefined,
-        createTsType(idl.idlType)
+        generateJsCode ? undefined : createTsType(idl.idlType)
     );
     return parameter;
 }
 
 function createTsType(idlType: webidl2.IDLTypeDescription) {
-    if (generateJsCode) {
-        return undefined;
-    }
-
     if (idlType.generic === null) {
         return ts.createTypeReferenceNode(idlType.idlType as string, []);
     }
@@ -34,32 +30,21 @@ function createTsType(idlType: webidl2.IDLTypeDescription) {
     return returnType;
 }
 
-function createProxyBody(body: webidl2.OperationMemberType) {
-    const functionName = ts.createIdentifier("n2");
-    const paramName = ts.createIdentifier("n");
-    const condition = ts.createBinary(
-        paramName,
-        ts.SyntaxKind.LessThanEqualsToken,
-        ts.createLiteral(1)
-    );
-
-    const ifBody = ts.createBlock(
-        [ts.createReturn(ts.createLiteral(1))],
-    /*multiline*/ true
-    );
-    const decrementedArg = ts.createBinary(
-        paramName,
-        ts.SyntaxKind.MinusToken,
-        ts.createLiteral(1)
-    );
-    const recurse = ts.createBinary(
-        paramName,
-        ts.SyntaxKind.AsteriskToken,
-        ts.createCall(functionName, /*typeArgs*/ undefined, [decrementedArg])
-    );
-    const statements = [ts.createIf(condition, ifBody), ts.createReturn(recurse)];
+function createProxyBody(idl: webidl2.OperationMemberType) {
+    const body = <webidl2.OperationMemberType>(<any>idl).body;
+    const functionName = ts.createIdentifier(getOperationName(idl));
+    const mainObject = ts.createPropertyAccess(ts.createIdentifier("navigator"), functionName);
+    const proxyCallArguments = body.arguments.map(_ => ts.createIdentifier(_.name));
+    const returnValue = ts.createCall(mainObject, /*typeArgs*/ undefined, proxyCallArguments);
+    const statements = [ts.createReturn(returnValue)];
     const methodBody = ts.createBlock(statements, /*multiline*/ true);
     return methodBody;
+}
+
+function getOperationName(idl: webidl2.OperationMemberType): string {
+    const body = (idl as any).body;
+    const operationName: any = body.name.value;
+    return operationName;
 }
 
 function createMember(idl: webidl2.OperationMemberType) {
@@ -76,20 +61,21 @@ function createMember(idl: webidl2.OperationMemberType) {
         paramName
     );
     const body = (idl as any).body;
-    const operationName: any = (idl as any).body.name.value;
+    const operationName = getOperationName(idl);
     const functionName = ts.createIdentifier(operationName);
     const arugments = body.arguments.map(createParameters);
-    const returnType = createTsType(body.idlType);
+    const returnType = generateJsCode ? undefined : createTsType(body.idlType);
+    const modifiers = [ts.createToken(ts.SyntaxKind.StaticKeyword)];
     return ts.createMethod(
         undefined,
-        undefined,
+        modifiers,
         undefined,
         operationName,
         undefined,
         undefined,
         arugments,
         returnType,
-        createProxyBody(body),
+        createProxyBody(idl),
     );
 }
 
@@ -97,16 +83,27 @@ function isOperationMember(idl: webidl2.IDLInterfaceMemberType): idl is Operatio
     return idl.type == "operation";
 }
 
-function makeFactorialFunction(idl: webidl2.InterfaceType) {
+function createProxyTypeDefinition(idl: webidl2.InterfaceType) {
     const proxyClassName = `Blazor${idl.name}Proxy`;
     const members = idl.members.filter(isOperationMember).map(createMember);
+    const modifiers = [ts.createToken(ts.SyntaxKind.ExportKeyword)];
     return ts.createClassDeclaration(
         /*decorators*/ undefined,
-        /*modifiers*/[ts.createToken(ts.SyntaxKind.ExportKeyword)],
+        /*modifiers*/ undefined,
         proxyClassName,
         undefined,
         undefined,
         members);
+}
+
+function createProxyRegistration(idl: webidl2.InterfaceType) {
+    const proxyClassName = `Blazor${idl.name}Proxy`;
+    const windowObject = ts.createIdentifier("window");    
+    const exportProxyExpression = ts.createAssignment(
+        ts.createPropertyAccess(windowObject, proxyClassName),
+        ts.createIdentifier(proxyClassName)
+    );
+    return ts.createExpressionStatement(exportProxyExpression);
 }
 
 export function generateType(idl: webidl2.InterfaceType) {
@@ -122,7 +119,26 @@ export function generateType(idl: webidl2.InterfaceType) {
     });
     const result = printer.printNode(
         ts.EmitHint.Unspecified,
-        makeFactorialFunction(idl),
+        createProxyTypeDefinition(idl),
+        resultFile
+    );
+    return result;
+}
+
+export function generateTypeRegistration(idl: webidl2.InterfaceType) {
+    const resultFile = ts.createSourceFile(
+        "someFileName.ts",
+        "",
+        ts.ScriptTarget.Latest,
+        /*setParentNodes*/ false,
+        ts.ScriptKind.TS
+    );
+    const printer = ts.createPrinter({
+        newLine: ts.NewLineKind.LineFeed
+    });
+    const result = printer.printNode(
+        ts.EmitHint.Unspecified,
+        createProxyRegistration(idl),
         resultFile
     );
     return result;
