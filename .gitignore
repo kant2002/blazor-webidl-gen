@@ -2,8 +2,10 @@ node_modules/
 *.js
 json/
 .vs/
+.idea/
 bin/
 obj/
 launchSettings.json
 *.user
-generated/
+Generated/
+generator/
