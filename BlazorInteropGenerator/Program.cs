@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using WebIdlCSharp;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace BlazorInteropGenerator
@@ -47,8 +48,7 @@ namespace BlazorInteropGenerator
 
         private int OnExecute(IConsole console)
         {
-            var content = File.ReadAllText(this.SourceFile);
-            var items = JsonConvert.DeserializeObject<WebIdlTypeDefinition[]>(content);
+            var items = WebIdlParser.LoadTypesFromFile(this.SourceFile);
             var code = CreateClassDefinitions(this.NamespaceName, items);
             if (string.IsNullOrEmpty(this.OutputFile))
             {

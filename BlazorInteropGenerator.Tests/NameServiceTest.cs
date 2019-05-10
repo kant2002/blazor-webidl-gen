@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
+using WebIdlCSharp;
 
 namespace BlazorInteropGenerator.Tests
 {
