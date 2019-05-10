@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.JSInterop" Version="0.6.0" />
+    <PackageReference Include="Microsoft.JSInterop" Version="3.0.0-preview5.19227.9" />
   </ItemGroup>
 
 

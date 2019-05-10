@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Blazor.Builder;
+using Microsoft.AspNetCore.Components.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Blazor.WebApiInterop.Samples
@@ -7,9 +7,10 @@ namespace Blazor.WebApiInterop.Samples
     {
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddScoped<BlazorExtensions.Navigator>();
         }
 
-        public void Configure(IBlazorApplicationBuilder app)
+        public void Configure(IComponentsApplicationBuilder app)
         {
             app.AddComponent<App>("app");
         }

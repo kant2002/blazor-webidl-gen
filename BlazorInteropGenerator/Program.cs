@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace BlazorInteropGenerator
 {
@@ -151,10 +152,27 @@ namespace BlazorInteropGenerator
                                 SyntaxFactory.Token(SyntaxKind.PublicKeyword),
                                 SyntaxFactory.Token(SyntaxKind.PartialKeyword)));
 
-                //// Inherit BaseEntity<T> and implement IHaveIdentity: (public class Order : BaseEntity<T>, IHaveIdentity)
-                //classDeclaration = classDeclaration.AddBaseListTypes(
-                //    SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("BaseEntity<Order>")),
-                //    SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("IHaveIdentity")));
+                var arguments = new[]
+                {
+                    Parameter(Identifier(NameService.GetValidIndentifier("asyncJsRunTime")))
+                        .WithType(ParseTypeName("IJSRuntime")),
+                };
+                var constructorMember = ConstructorDeclaration(NameService.GetValidIndentifier(name))
+                    .WithModifiers(TokenList(
+                        Token(SyntaxKind.PublicKeyword)))
+                    .WithParameterList(ParameterList(SeparatedList(arguments)))
+                    .WithBody(Block(
+                        ParseStatement("this.asyncJsRunTime = asyncJsRunTime;")));
+                classDeclaration = classDeclaration.AddMembers(constructorMember);
+                var asyncJsRunTimeField = SyntaxFactory.FieldDeclaration(
+                    VariableDeclaration(
+                        ParseTypeName("IJSRuntime"))
+                .WithVariables(
+                    SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
+                        SyntaxFactory.VariableDeclarator(
+                            SyntaxFactory.Identifier(NameService.GetValidIndentifier("asyncJsRunTime"))))))
+                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PrivateKeyword)));
+                classDeclaration = classDeclaration.AddMembers(asyncJsRunTimeField);
 
                 var proxyClass = $"Blazor{token.Name}Proxy";
                 foreach (var enumMemberDefinition in token.Members)
@@ -214,11 +232,9 @@ namespace BlazorInteropGenerator
                 var methodModifier = isAsyncCall
                     ? SyntaxFactory.TokenList(
                         SyntaxFactory.Token(SyntaxKind.PublicKeyword),
-                        SyntaxFactory.Token(SyntaxKind.StaticKeyword),
                         SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
                     : SyntaxFactory.TokenList(
-                        SyntaxFactory.Token(SyntaxKind.PublicKeyword),
-                        SyntaxFactory.Token(SyntaxKind.StaticKeyword));
+                        SyntaxFactory.Token(SyntaxKind.PublicKeyword));
                 return SyntaxFactory.MethodDeclaration(returnType, NameService.GetValidIndentifier(name))
                     .WithModifiers(methodModifier)
                     .WithParameterList(SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(arguments)))
@@ -283,7 +299,7 @@ namespace BlazorInteropGenerator
             */
             var methodName = memberDefinition.Body.Name.Escaped;
             var asyncInvocation = SyntaxFactory.ParseExpression($@"await asyncJsRunTime.InvokeAsync<string>(""{proxyClass}.{methodName}"", message)");
-            var syntax = SyntaxFactory.ParseStatement("var asyncJsRunTime = JSRuntime.Current;");
+            var syntax = SyntaxFactory.ParseStatement("var asyncJsRunTime = this.asyncJsRunTime;");
             var proxyFunctionArgument = SyntaxFactory.Argument(
                 SyntaxFactory.LiteralExpression(
                     SyntaxKind.StringLiteralExpression,
@@ -327,7 +343,7 @@ namespace BlazorInteropGenerator
             */
             var methodName = memberDefinition.Body.Name.Escaped;
             var asyncInvocation = SyntaxFactory.ParseExpression($@"await asyncJsRunTime.InvokeAsync<string>(""{proxyClass}.{methodName}"", message)");
-            var syntax = SyntaxFactory.ParseStatement("var syncJsRunTime = (IJSInProcessRuntime)JSRuntime.Current;");
+            var syntax = SyntaxFactory.ParseStatement("var syncJsRunTime = (IJSInProcessRuntime)this.asyncJsRunTime;");
             var proxyFunctionArgument = SyntaxFactory.Argument(
                 SyntaxFactory.LiteralExpression(
                     SyntaxKind.StringLiteralExpression,

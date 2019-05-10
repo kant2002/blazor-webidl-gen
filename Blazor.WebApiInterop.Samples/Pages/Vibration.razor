@@ -1,5 +1,6 @@
 ﻿@page "/vibration"
 @using BlazorExtensions
+@inject Navigator navigator
 
 <h1>Vibration</h1>
 
@@ -12,6 +13,6 @@
 
     void IncrementCount()
     {
-        lastReturnFromVibrate = Navigator.vibrate(new[] { 500, 100 });
+        lastReturnFromVibrate = navigator.vibrate(new[] { 500, 100 });
     }
 }
