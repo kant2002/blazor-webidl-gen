@@ -9,3 +9,4 @@ launchSettings.json
 *.user
 Generated/
 generator/
+Blazor.WebApiInterop/wwwroot/

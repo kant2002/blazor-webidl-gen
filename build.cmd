@@ -3,7 +3,7 @@ cd Blazor.InteropGenerator.JS
 set json_dir=../json
 git submodule update --init
 set idl_location=../generator/inputfiles/idl
-set js_location=../Blazor.WebApiInterop/Generated/Content
+set js_location=../Blazor.WebApiInterop/wwwroot
 if not exist "%json_dir%" mkdir "%json_dir%"
 if not exist "%js_location%" mkdir "%js_location%"
 
