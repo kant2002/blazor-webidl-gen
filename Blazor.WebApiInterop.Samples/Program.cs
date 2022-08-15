@@ -1,16 +1,14 @@
-﻿using Microsoft.AspNetCore.Blazor.Hosting;
+﻿using Blazor.WebApiInterop.Samples;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Blazor.WebApiInterop.Samples
-{
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            CreateHostBuilder(args).Build().Run();
-        }
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
+builder.RootComponents.Add<App>("#app");
+builder.RootComponents.Add<HeadOutlet>("head::after");
 
-        public static IWebAssemblyHostBuilder CreateHostBuilder(string[] args) =>
-            BlazorWebAssemblyHost.CreateDefaultBuilder()
-                .UseBlazorStartup<Startup>();
-    }
-}
+var services = builder.Services;
+
+services.AddScoped<BlazorExtensions.Navigator>();
+
+await builder.Build().RunAsync();

@@ -1,9 +1,11 @@
 @echo off
 cd Blazor.InteropGenerator.JS
 set json_dir=../json
+git submodule update --init
 set idl_location=../generator/inputfiles/idl
 set js_location=../Blazor.WebApiInterop/Generated/Content
 if not exist "%json_dir%" mkdir "%json_dir%"
+if not exist "%js_location%" mkdir "%js_location%"
 
 cmd /c npm run compile
 cmd /c npm run process -- "%idl_location%/Vibration.widl" "%json_dir%/Vibration.json" "%js_location%/Vibration.js"

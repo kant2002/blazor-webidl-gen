@@ -1,18 +1,20 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <RunCommand>dotnet</RunCommand>
-    <LangVersion>7.3</LangVersion>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>10</LangVersion>
     <RazorLangVersion>3.0</RazorLangVersion>
-    <MicrosoftAspNetCoreBlazorVersion>3.0.0-preview9.19465.2</MicrosoftAspNetCoreBlazorVersion>
+    <MicrosoftAspNetCoreBlazorVersion>6.0.0</MicrosoftAspNetCoreBlazorVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Blazor" Version="$(MicrosoftAspNetCoreBlazorVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.HttpClient" Version="$(MicrosoftAspNetCoreBlazorVersion)" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.Build" Version="$(MicrosoftAspNetCoreBlazorVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.Blazor.DevServer" Version="$(MicrosoftAspNetCoreBlazorVersion)" PrivateAssets="all" />
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="$(MicrosoftAspNetCoreBlazorVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="$(MicrosoftAspNetCoreBlazorVersion)" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="$(MicrosoftAspNetCoreBlazorVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
