@@ -5,7 +5,7 @@ json_dir=../json
 idl_location=../generator/inputfiles/idl
 mkdir -p $json_dir
 
-npm ci
+npm install
 npm run compile
 npm run process -- "$idl_location/Vibration.widl" "$json_dir/Vibration.json"
 npm run process -- "$idl_location/Storage.widl" "$json_dir/Storage.json"
