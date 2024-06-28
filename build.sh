@@ -2,6 +2,7 @@
 
 cd Blazor.InteropGenerator.JS
 json_dir=../json
+git submodule update --init
 idl_location=../generator/inputfiles/idl
 mkdir -p $json_dir
 
