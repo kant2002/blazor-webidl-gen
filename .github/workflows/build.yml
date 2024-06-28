@@ -14,5 +14,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Generate code
+      run: |
+        ./build.sh
+        ./generate-csharp.sh
     - name: Build
       run: dotnet build
