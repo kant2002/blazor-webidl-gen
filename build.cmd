@@ -7,6 +7,7 @@ set js_location=../Blazor.WebApiInterop/wwwroot
 if not exist "%json_dir%" mkdir "%json_dir%"
 if not exist "%js_location%" mkdir "%js_location%"
 
+cmd /c npm ci
 cmd /c npm run compile
 cmd /c npm run process -- "%idl_location%/Vibration.widl" "%json_dir%/Vibration.json" "%js_location%/Vibration.js"
 cmd /c npm run process -- "%idl_location%/Storage.widl" "%json_dir%/Storage.json" "%js_location%/Storage.js"
