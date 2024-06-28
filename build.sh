@@ -2,9 +2,11 @@
 
 cd Blazor.InteropGenerator.JS
 json_dir=../json
+git submodule update --init
 idl_location=../generator/inputfiles/idl
 mkdir -p $json_dir
 
+npm install
 npm run compile
 npm run process -- "$idl_location/Vibration.widl" "$json_dir/Vibration.json"
 npm run process -- "$idl_location/Storage.widl" "$json_dir/Storage.json"

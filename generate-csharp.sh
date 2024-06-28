@@ -15,12 +15,12 @@ dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n Blazor
 dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Notifications.json" -o $outputpath/Notifications.cs
 
 # 7 compilation errors
-dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Performance Timeline.json" -o $outputpath/PerformanceTimeline.cs
+#dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Performance Timeline.json" -o $outputpath/PerformanceTimeline.cs
 
 # These files produce exceptions
-dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Push.json" -o $outputpath/Push.cs
-dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Indexed Database.json" -o $outputpath/IndexedDatabase.cs
-dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Navigation Timing.json" -o $outputpath/NavigationTiming.cs
-dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Service Workers.json" -o $outputpath/ServiceWorkers.cs
+#dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Push.json" -o $outputpath/Push.cs
+#dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Indexed Database.json" -o $outputpath/IndexedDatabase.cs
+#dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Navigation Timing.json" -o $outputpath/NavigationTiming.cs
+#dotnet run --no-build --no-launch-profile -p BlazorInteropGenerator -- -n BlazorExtensions -s "json/Service Workers.json" -o $outputpath/ServiceWorkers.cs
 
 echo Completed!

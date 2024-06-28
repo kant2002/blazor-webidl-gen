@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26124.0
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.34929.205
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorInteropGenerator", "BlazorInteropGenerator\BlazorInteropGenerator.csproj", "{7A95D1D3-974B-4547-8405-658EE9F77F29}"
 EndProject
@@ -20,6 +20,13 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Blazor.WebApiInterop.Samples", "Blazor.WebApiInterop.Samples\Blazor.WebApiInterop.Samples.csproj", "{D5CD97AE-8221-4FAC-AD17-CFC77F8766AD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Blazor.InteropGenerator.JS", "Blazor.InteropGenerator.JS\Blazor.InteropGenerator.JS.csproj", "{9437900C-963E-41D8-9CD0-6BAB93E2246C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{85725ED8-C969-481E-A2F0-081F7C0F8130}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{F37C0D8A-C4AB-483D-BFA1-07DDFF50F0FC}"
+	ProjectSection(SolutionItems) = preProject
+		build.yml = build.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -94,6 +101,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F37C0D8A-C4AB-483D-BFA1-07DDFF50F0FC} = {85725ED8-C969-481E-A2F0-081F7C0F8130}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BB7C067C-A30D-485C-A989-3F0D08E8E962}
